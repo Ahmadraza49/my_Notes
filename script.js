@@ -7,10 +7,12 @@ let currentUser = null;
 /* SHORTCUTS */
 const btnSet = document.getElementById("btn-set");
 const newPass = document.getElementById("new-pass");
+const toggleNewPass = document.getElementById("toggle-new-pass");
 const btnGoLogin = document.getElementById("btn-go-login");
 const btnGoSet = document.getElementById("btn-go-set");
 const btnLogin = document.getElementById("btn-login");
 const loginPass = document.getElementById("login-pass");
+const toggleLoginPass = document.getElementById("toggle-login-pass");
 
 const screenSet = document.getElementById("screen-set");
 const screenLogin = document.getElementById("screen-login");
@@ -46,10 +48,34 @@ function saveDB() {
         SUPABASE SETUP
 ---------------------------------- */
 const SUPABASE_URL = "https://ytxhlihzxgftffaikumr.supabase.co";
+// Your anon public key (you put it earlier in the conversation). It's safe to use in browser for public buckets.
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl0eGhsaWh6eGdmdGZmYWlrdW1yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM4ODAxNTgsImV4cCI6MjA3OTQ1NjE1OH0._k5hfgJwVSrbXtlRDt3ZqCYpuU1k-_OqD7M0WML4ehA";
 
-const BUCKET = "images";  
+const BUCKET = "images";
 const BOOK_FOLDER = "BooksDocs";
+
+/* ---------------------------------
+        PASSWORD SHOW / HIDE (SVG eye)
+---------------------------------- */
+function togglePassword(inputEl, eyeSvg) {
+  if (inputEl.type === "password") {
+    inputEl.type = "text";
+    eyeSvg.classList.add("text-blue-400");
+  } else {
+    inputEl.type = "password";
+    eyeSvg.classList.remove("text-blue-400");
+  }
+}
+
+toggleNewPass.addEventListener("click", () => {
+  const svg = document.getElementById("new-pass-eye");
+  togglePassword(newPass, svg);
+});
+
+toggleLoginPass.addEventListener("click", () => {
+  const svg = document.getElementById("login-pass-eye");
+  togglePassword(loginPass, svg);
+});
 
 /* ---------------------------------
         CREATE PASSWORD USER
@@ -63,8 +89,12 @@ btnSet.onclick = () => {
   }
 
   saveDB();
-  alert("Password created!");
+  alert("Password created! Please login.");
   newPass.value = "";
+
+  // switch to login screen
+  screenSet.classList.add("hidden");
+  screenLogin.classList.remove("hidden");
 };
 
 /* SWITCH SCREENS */
@@ -95,6 +125,9 @@ btnLogout.onclick = () => location.reload();
 
 /* LOAD ALL DATA */
 function loadUserData() {
+  // Make sure user object exists
+  if (!users[currentUser]) users[currentUser] = { notes: [], books: [], images: [] };
+
   loadNotes();
   loadBooks();
   loadGallery();
@@ -106,7 +139,7 @@ function loadUserData() {
 ---------------------------------- */
 function loadNotes() {
   notesList.innerHTML = "";
-  users[currentUser].notes.forEach(n => {
+  (users[currentUser].notes || []).forEach(n => {
     const li = document.createElement("li");
     li.className = "p-2 bg-gray-200 rounded";
     li.textContent = n;
@@ -117,7 +150,6 @@ function loadNotes() {
 btnSave.onclick = () => {
   const t = noteInput.value.trim();
   if (!t) return;
-
   users[currentUser].notes.push(t);
   saveDB();
   loadNotes();
@@ -141,10 +173,9 @@ btnUploadBook.onclick = async () => {
     const fileName = `${currentUser}_${Date.now()}_${file.name}`;
     const fullPath = `${BOOK_FOLDER}/${fileName}`;
 
-    // FIXED SUPABASE UPLOAD (CORRECT ENDPOINT)
-    const uploadRes = await fetch(
-      `${SUPABASE_URL}/storage/v1/object/${BUCKET}/${fullPath}`,
-      {
+    try {
+      // Use PUT to upload file into storage path
+      const uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${fullPath}`, {
         method: "PUT",
         headers: {
           "apikey": SUPABASE_KEY,
@@ -152,19 +183,24 @@ btnUploadBook.onclick = async () => {
           "Content-Type": file.type
         },
         body: file
-      }
-    );
+      });
 
-    if (!uploadRes.ok) {
-      alert("Document upload failed!");
+      if (!uploadRes.ok) {
+        const text = await uploadRes.text();
+        console.error("Book upload error response:", uploadRes.status, text);
+        alert("Document upload failed! Check console for details.");
+        return;
+      }
+
+      fileURL = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${fullPath}`;
+    } catch (err) {
+      console.error("Book upload failed:", err);
+      alert("Document upload failed! See console.");
       return;
     }
-
-    fileURL = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${fullPath}`;
   }
 
   users[currentUser].books.push({ text, file: fileURL });
-
   saveDB();
   loadBooks();
 
@@ -177,7 +213,7 @@ btnUploadBook.onclick = async () => {
 function loadBooks() {
   booksList.innerHTML = "";
 
-  users[currentUser].books.forEach((b, i) => {
+  (users[currentUser].books || []).forEach((b, i) => {
     const li = document.createElement("li");
     li.className = "p-3 bg-purple-200 rounded";
 
@@ -215,9 +251,8 @@ btnUpload.onclick = async () => {
     const fileName = `${currentUser}_${Date.now()}_${file.name}`;
     const fullPath = `Gallery/${fileName}`;
 
-    const uploadRes = await fetch(
-      `${SUPABASE_URL}/storage/v1/object/${BUCKET}/${fullPath}`,
-      {
+    try {
+      const uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${fullPath}`, {
         method: "PUT",
         headers: {
           "apikey": SUPABASE_KEY,
@@ -225,24 +260,33 @@ btnUpload.onclick = async () => {
           "Content-Type": file.type
         },
         body: file
-      }
-    );
+      });
 
-    if (uploadRes.ok) {
+      if (!uploadRes.ok) {
+        const txt = await uploadRes.text();
+        console.error("Image upload error:", uploadRes.status, txt);
+        alert("Upload failed for some files. Check console for details.");
+        continue;
+      }
+
       const url = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${fullPath}`;
       users[currentUser].images.push(url);
+    } catch (err) {
+      console.error("Upload failed:", err);
+      alert("Upload failed. See console.");
     }
   }
 
   saveDB();
   loadGallery();
+  imageInput.value = "";
   alert("Images uploaded!");
 };
 
 function loadGallery() {
   galleryGrid.innerHTML = "";
 
-  users[currentUser].images.forEach(src => {
+  (users[currentUser].images || []).forEach(src => {
     const img = document.createElement("img");
     img.src = src;
     img.className = "w-full h-40 object-cover rounded cursor-pointer";
@@ -250,13 +294,12 @@ function loadGallery() {
     galleryGrid.appendChild(img);
   });
 
-  imgCount.innerText = users[currentUser].images.length;
+  imgCount.innerText = (users[currentUser].images || []).length;
 }
 
 /* FULL-SIZE IMAGE VIEWER */
 function openImage(src) {
   popupImg.src = src;
-  popupImg.className = "max-w-[95vw] max-h-[95vh] object-contain rounded";
   imagePopup.classList.remove("hidden");
 }
 
@@ -278,3 +321,4 @@ function showPanel(p) {
 document.getElementById("tab-notes").onclick = () => showPanel("notes");
 document.getElementById("tab-gallery").onclick = () => showPanel("gallery");
 document.getElementById("tab-books").onclick = () => showPanel("books");
+
