@@ -1,8 +1,14 @@
 /* ---------------------------------
-        LOCAL DATABASE
+        SUPABASE SETUP
 ---------------------------------- */
-let users = JSON.parse(localStorage.getItem("users_db") || "{}");
-let currentUser = null;
+const SUPABASE_URL = "https://ytxhlihzxgftffaikumr.supabase.co";
+const SUPABASE_KEY = "YOUR_SUPABASE_ANON_KEY"; // replace with your key
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const BUCKET = "images";
+const BOOK_FOLDER = "BooksDocs";
+
+let currentUser = null; // stores logged in user data
 
 /* SHORTCUTS */
 const btnSet = document.getElementById("btn-set");
@@ -39,23 +45,8 @@ const imageInput = document.getElementById("image-input");
 const popupImg = document.getElementById("popup-img");
 const imagePopup = document.getElementById("image-popup");
 
-/* SAVE DB */
-function saveDB() {
-  localStorage.setItem("users_db", JSON.stringify(users));
-}
-
 /* ---------------------------------
-        SUPABASE SETUP
----------------------------------- */
-const SUPABASE_URL = "https://ytxhlihzxgftffaikumr.supabase.co";
-// Your anon public key (you put it earlier in the conversation). It's safe to use in browser for public buckets.
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl0eGhsaWh6eGdmdGZmYWlrdW1yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM4ODAxNTgsImV4cCI6MjA3OTQ1NjE1OH0._k5hfgJwVSrbXtlRDt3ZqCYpuU1k-_OqD7M0WML4ehA";
-
-const BUCKET = "images";
-const BOOK_FOLDER = "BooksDocs";
-
-/* ---------------------------------
-        PASSWORD SHOW / HIDE (SVG eye)
+        PASSWORD SHOW / HIDE
 ---------------------------------- */
 function togglePassword(inputEl, eyeSvg) {
   if (inputEl.type === "password") {
@@ -68,31 +59,47 @@ function togglePassword(inputEl, eyeSvg) {
 }
 
 toggleNewPass.addEventListener("click", () => {
-  const svg = document.getElementById("new-pass-eye");
-  togglePassword(newPass, svg);
+  togglePassword(newPass, document.getElementById("new-pass-eye"));
 });
-
 toggleLoginPass.addEventListener("click", () => {
-  const svg = document.getElementById("login-pass-eye");
-  togglePassword(loginPass, svg);
+  togglePassword(loginPass, document.getElementById("login-pass-eye"));
 });
 
 /* ---------------------------------
         CREATE PASSWORD USER
 ---------------------------------- */
-btnSet.onclick = () => {
+btnSet.onclick = async () => {
   const pass = newPass.value.trim();
   if (!pass) return alert("Enter a password");
 
-  if (!users[pass]) {
-    users[pass] = { notes: [], books: [], images: [] };
+  // check if password already exists
+  const { data: existing, error: checkErr } = await supabase
+    .from("users")
+    .select("*")
+    .eq("password", pass)
+    .single();
+
+  if (checkErr && checkErr.code !== "PGRST116") { 
+    console.error(checkErr); 
+    return alert("Error checking password"); 
   }
 
-  saveDB();
+  if (existing) return alert("Password already exists. Try a new one!");
+
+  const { data, error } = await supabase
+    .from("users")
+    .insert({ password: pass, notes: [], images: [], books: [] })
+    .select()
+    .single();
+
+  if (error) {
+    console.error(error);
+    return alert("Error creating password");
+  }
+
   alert("Password created! Please login.");
   newPass.value = "";
 
-  // switch to login screen
   screenSet.classList.add("hidden");
   screenLogin.classList.remove("hidden");
 };
@@ -102,31 +109,42 @@ btnGoLogin.onclick = () => {
   screenSet.classList.add("hidden");
   screenLogin.classList.remove("hidden");
 };
-
 btnGoSet.onclick = () => {
   screenLogin.classList.add("hidden");
   screenSet.classList.remove("hidden");
 };
 
 /* LOGIN */
-btnLogin.onclick = () => {
+btnLogin.onclick = async () => {
   const pass = loginPass.value.trim();
-  if (!users[pass]) return alert("Wrong password");
+  if (!pass) return alert("Enter password");
 
-  currentUser = pass;
-  loadUserData();
+  const { data, error } = await supabase
+    .from("users")
+    .select("*")
+    .eq("password", pass)
+    .single();
+
+  if (error || !data) return alert("Wrong password");
+  currentUser = data;
+
+  await loadUserData();
 
   screenLogin.classList.add("hidden");
   screenApp.classList.remove("hidden");
   loginPass.value = "";
 };
 
+/* LOGOUT */
 btnLogout.onclick = () => location.reload();
 
-/* LOAD ALL DATA */
-function loadUserData() {
-  // Make sure user object exists
-  if (!users[currentUser]) users[currentUser] = { notes: [], books: [], images: [] };
+/* ---------------------------------
+        LOAD USER DATA
+---------------------------------- */
+async function loadUserData() {
+  currentUser.notes = currentUser.notes || [];
+  currentUser.books = currentUser.books || [];
+  currentUser.images = currentUser.images || [];
 
   loadNotes();
   loadBooks();
@@ -135,11 +153,11 @@ function loadUserData() {
 }
 
 /* ---------------------------------
-                NOTES
+        NOTES
 ---------------------------------- */
 function loadNotes() {
   notesList.innerHTML = "";
-  (users[currentUser].notes || []).forEach(n => {
+  (currentUser.notes || []).forEach(n => {
     const li = document.createElement("li");
     li.className = "p-2 bg-gray-200 rounded";
     li.textContent = n;
@@ -147,11 +165,16 @@ function loadNotes() {
   });
 }
 
-btnSave.onclick = () => {
+btnSave.onclick = async () => {
   const t = noteInput.value.trim();
   if (!t) return;
-  users[currentUser].notes.push(t);
-  saveDB();
+  currentUser.notes.push(t);
+
+  await supabase
+    .from("users")
+    .update({ notes: currentUser.notes })
+    .eq("id", currentUser.id);
+
   loadNotes();
   noteInput.value = "";
 };
@@ -159,7 +182,7 @@ btnSave.onclick = () => {
 btnClear.onclick = () => (noteInput.value = "");
 
 /* ---------------------------------
-        BOOKS (TEXT + DOCUMENT)
+        BOOKS
 ---------------------------------- */
 btnUploadBook.onclick = async () => {
   const text = bookText.value.trim();
@@ -170,50 +193,40 @@ btnUploadBook.onclick = async () => {
   let fileURL = null;
 
   if (file) {
-    const fileName = `${currentUser}_${Date.now()}_${file.name}`;
+    const fileName = `${currentUser.id}_${Date.now()}_${file.name}`;
     const fullPath = `${BOOK_FOLDER}/${fileName}`;
 
-    try {
-      // Use PUT to upload file into storage path
-      const uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${fullPath}`, {
-        method: "PUT",
-        headers: {
-          "apikey": SUPABASE_KEY,
-          "Authorization": `Bearer ${SUPABASE_KEY}`,
-          "Content-Type": file.type
-        },
-        body: file
-      });
+    const uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${fullPath}`, {
+      method: "PUT",
+      headers: {
+        "apikey": SUPABASE_KEY,
+        "Authorization": `Bearer ${SUPABASE_KEY}`,
+        "Content-Type": file.type
+      },
+      body: file
+    });
 
-      if (!uploadRes.ok) {
-        const text = await uploadRes.text();
-        console.error("Book upload error response:", uploadRes.status, text);
-        alert("Document upload failed! Check console for details.");
-        return;
-      }
-
-      fileURL = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${fullPath}`;
-    } catch (err) {
-      console.error("Book upload failed:", err);
-      alert("Document upload failed! See console.");
-      return;
-    }
+    if (!uploadRes.ok) return alert("Document upload failed");
+    fileURL = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${fullPath}`;
   }
 
-  users[currentUser].books.push({ text, file: fileURL });
-  saveDB();
-  loadBooks();
+  currentUser.books.push({ text, file: fileURL });
+
+  await supabase
+    .from("users")
+    .update({ books: currentUser.books })
+    .eq("id", currentUser.id);
 
   bookText.value = "";
   bookFile.value = "";
 
+  loadBooks();
   alert("Book saved!");
 };
 
 function loadBooks() {
   booksList.innerHTML = "";
-
-  (users[currentUser].books || []).forEach((b, i) => {
+  (currentUser.books || []).forEach((b, i) => {
     const li = document.createElement("li");
     li.className = "p-3 bg-purple-200 rounded";
 
@@ -224,22 +237,26 @@ function loadBooks() {
         <button data-i="${i}" class="text-red-600 delete-book">Delete</button>
       </div>
     `;
-
     booksList.appendChild(li);
   });
 
   document.querySelectorAll(".delete-book").forEach(btn => {
-    btn.onclick = e => {
+    btn.onclick = async e => {
       const index = e.target.dataset.i;
-      users[currentUser].books.splice(index, 1);
-      saveDB();
+      currentUser.books.splice(index, 1);
+
+      await supabase
+        .from("users")
+        .update({ books: currentUser.books })
+        .eq("id", currentUser.id);
+
       loadBooks();
     };
   });
 }
 
 /* ---------------------------------
-              GALLERY
+        GALLERY
 ---------------------------------- */
 btnChoose.onclick = () => imageInput.click();
 
@@ -248,36 +265,30 @@ btnUpload.onclick = async () => {
   if (!files.length) return alert("Select images first");
 
   for (let file of files) {
-    const fileName = `${currentUser}_${Date.now()}_${file.name}`;
+    const fileName = `${currentUser.id}_${Date.now()}_${file.name}`;
     const fullPath = `Gallery/${fileName}`;
 
-    try {
-      const uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${fullPath}`, {
-        method: "PUT",
-        headers: {
-          "apikey": SUPABASE_KEY,
-          "Authorization": `Bearer ${SUPABASE_KEY}`,
-          "Content-Type": file.type
-        },
-        body: file
-      });
+    const uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${fullPath}`, {
+      method: "PUT",
+      headers: {
+        "apikey": SUPABASE_KEY,
+        "Authorization": `Bearer ${SUPABASE_KEY}`,
+        "Content-Type": file.type
+      },
+      body: file
+    });
 
-      if (!uploadRes.ok) {
-        const txt = await uploadRes.text();
-        console.error("Image upload error:", uploadRes.status, txt);
-        alert("Upload failed for some files. Check console for details.");
-        continue;
-      }
+    if (!uploadRes.ok) continue;
 
-      const url = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${fullPath}`;
-      users[currentUser].images.push(url);
-    } catch (err) {
-      console.error("Upload failed:", err);
-      alert("Upload failed. See console.");
-    }
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${fullPath}`;
+    currentUser.images.push(url);
   }
 
-  saveDB();
+  await supabase
+    .from("users")
+    .update({ images: currentUser.images })
+    .eq("id", currentUser.id);
+
   loadGallery();
   imageInput.value = "";
   alert("Images uploaded!");
@@ -285,8 +296,7 @@ btnUpload.onclick = async () => {
 
 function loadGallery() {
   galleryGrid.innerHTML = "";
-
-  (users[currentUser].images || []).forEach(src => {
+  (currentUser.images || []).forEach(src => {
     const img = document.createElement("img");
     img.src = src;
     img.className = "w-full h-40 object-cover rounded cursor-pointer";
@@ -294,10 +304,9 @@ function loadGallery() {
     galleryGrid.appendChild(img);
   });
 
-  imgCount.innerText = (users[currentUser].images || []).length;
+  imgCount.innerText = (currentUser.images || []).length;
 }
 
-/* FULL-SIZE IMAGE VIEWER */
 function openImage(src) {
   popupImg.src = src;
   imagePopup.classList.remove("hidden");
@@ -306,16 +315,15 @@ function openImage(src) {
 imagePopup.onclick = () => imagePopup.classList.add("hidden");
 
 /* ---------------------------------
-                TABS
+        TABS
 ---------------------------------- */
 function showPanel(p) {
-  ["notes", "gallery", "books"].forEach(name => {
+  ["notes","gallery","books"].forEach(name=>{
     document.getElementById(`panel-${name}`).classList.add("hidden");
-    document.getElementById(`tab-${name}`).classList.remove("bg-indigo-600", "text-white");
+    document.getElementById(`tab-${name}`).classList.remove("bg-indigo-600","text-white");
   });
-
   document.getElementById(`panel-${p}`).classList.remove("hidden");
-  document.getElementById(`tab-${p}`).classList.add("bg-indigo-600", "text-white");
+  document.getElementById(`tab-${p}`).classList.add("bg-indigo-600","text-white");
 }
 
 document.getElementById("tab-notes").onclick = () => showPanel("notes");
