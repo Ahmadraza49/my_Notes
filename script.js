@@ -230,7 +230,7 @@ async function loadGallery() {
   data.forEach((imgObj) => {
     const img = document.createElement("img");
     img.src = imgObj.file_url;
-    img.className = "w-full h-44 object-cover rounded-xl shadow cursor-pointer";
+    img.className = "w-full h-44 object-contain rounded-xl shadow cursor-pointer";
     img.loading = "lazy"; // speeds up initial load
     img.addEventListener("click", () => openFullscreen(imgObj.file_url));
     galleryGrid.appendChild(img);
@@ -296,3 +296,4 @@ async function loadBooks() {
     booksList.appendChild(li);
   });
 }
+
