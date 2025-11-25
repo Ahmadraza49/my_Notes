@@ -1,0 +1,39 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Reset password</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <h2>Resetting password...</h2>
+  <p>If you were redirected here from your email, follow the prompt to set a new password.</p>
+
+  <script>
+    // create supabase client with same keys
+    const sb = supabase.createClient(
+      "https://ytxhlihzxgftffaikumr.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl0eGhsaWh6eGdmdGZmYWlrdW1yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM4ODAxNTgsImV4cCI6MjA3OTQ1NjE1OH0._k5hfgJwVSrbXtlRDt3ZqCYpuU1k-_OqD7M0WML4ehA"
+    );
+
+    // import same logic: listen for PASSWORD_RECOVERY (supabase will emit it)
+    sb.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        const newPass = prompt('Enter your new password:');
+        if (!newPass) return alert('No password entered');
+        const { error } = await sb.auth.updateUser({ password: newPass });
+        if (error) return alert(error.message);
+        alert('Password updated! You can now login.');
+       window.location.href = "https://my-notes-jade-five.vercel.app";
+
+      }
+    });
+
+    // Also attempt to get session (some flows may already have recovery)
+    (async () => {
+      const { data } = await sb.auth.getSession();
+      // nothing to do here; event listener above will trigger if recovery session present
+    })();
+  </script>
+</body>
+</html>
