@@ -7,325 +7,268 @@ const sb = window.supabase.createClient(
 );
 
 let currentUser = null;
-const BUCKET = "images";
-const BOOK_FOLDER = "BooksDocs";
 
 /* ---------------------------------
-        ELEMENT SHORTCUTS
+      ELEMENTS
 ---------------------------------- */
-const btnSet = document.getElementById("btn-set");
-const btnLogin = document.getElementById("btn-login");
-const newPass = document.getElementById("new-pass");
-const loginPass = document.getElementById("login-pass");
-
-const toggleNewPass = document.getElementById("toggle-new-pass");
-const toggleLoginPass = document.getElementById("toggle-login-pass");
-const newPassEye = document.getElementById("new-pass-eye");
-const loginPassEye = document.getElementById("login-pass-eye");
-
-const screenSet = document.getElementById("screen-set");
+const screenSignup = document.getElementById("screen-signup");
 const screenLogin = document.getElementById("screen-login");
 const screenApp = document.getElementById("screen-app");
 
-const btnGoLogin = document.getElementById("btn-go-login");
-const btnGoSet = document.getElementById("btn-go-set");
-const btnLogout = document.getElementById("btn-logout");
+const signupEmail = document.getElementById("signup-email");
+const signupPass = document.getElementById("signup-pass");
+const btnSignup = document.getElementById("btn-signup");
+const gotoLogin = document.getElementById("goto-login");
 
-/* NOTES / BOOKS / GALLERY */
-const notesList = document.getElementById("notes-list");
+const loginEmail = document.getElementById("login-email");
+const loginPass = document.getElementById("login-pass");
+const btnLogin = document.getElementById("btn-login");
+const btnForgot = document.getElementById("btn-forgot");
+const gotoSignup = document.getElementById("goto-signup");
+
+const btnLogout = document.getElementById("btn-logout");
+const userEmailEl = document.getElementById("user-email");
+
+/* notes/gallery/books elements */
 const noteInput = document.getElementById("note-input");
 const btnSave = document.getElementById("btn-save");
-const btnClear = document.getElementById("btn-clear");
+const notesList = document.getElementById("notes-list");
 
-const booksList = document.getElementById("books-list");
+const imageInput = document.getElementById("image-input");
+const btnUpload = document.getElementById("btn-upload");
+const galleryGrid = document.getElementById("gallery-grid");
+
 const bookText = document.getElementById("book-text");
 const bookFile = document.getElementById("book-file");
 const btnUploadBook = document.getElementById("btn-upload-book");
+const booksList = document.getElementById("books-list");
 
-const galleryGrid = document.getElementById("gallery-grid");
-const imgCount = document.getElementById("img-count");
-const btnChoose = document.getElementById("btn-choose");
-const btnUpload = document.getElementById("btn-upload");
-const imageInput = document.getElementById("image-input");
-
-/* ---------------------------------
-        UTIL: toggle password visibility
----------------------------------- */
-function togglePasswordInput(inputEl, eyeSvg) {
-  if (!inputEl) return;
-  if (inputEl.type === "password") {
-    inputEl.type = "text";
-    if (eyeSvg) eyeSvg.classList.add("text-blue-400");
-  } else {
-    inputEl.type = "password";
-    if (eyeSvg) eyeSvg.classList.remove("text-blue-400");
-  }
-}
-toggleNewPass?.addEventListener("click", () => togglePasswordInput(newPass, newPassEye));
-toggleLoginPass?.addEventListener("click", () => togglePasswordInput(loginPass, loginPassEye));
+/* inline forgot (optional) */
+const screenForgotInline = document.getElementById("screen-forgot-inline");
+const forgotEmailInline = document.getElementById("forgot-email-inline");
+const btnSendResetInline = document.getElementById("btn-send-reset-inline");
+const btnBackToLogin = document.getElementById("btn-back-to-login");
 
 /* ---------------------------------
-        CREATE PASSWORD
+      UI: screen switching
 ---------------------------------- */
-btnSet?.addEventListener("click", async () => {
-  const password = newPass?.value?.trim();
-  if (!password) return alert("Enter a password");
+gotoLogin?.addEventListener("click", () => {
+  screenSignup.classList.add("hidden");
+  screenLogin.classList.remove("hidden");
+});
 
-  try {
-    const { data: exists, error: checkErr } = await sb
-      .from("users")
-      .select("id")
-      .eq("password", password)
-      .limit(1);
+document.getElementById("goto-signup")?.addEventListener("click", () => {
+  screenLogin.classList.add("hidden");
+  screenSignup.classList.remove("hidden");
+});
 
-    if (checkErr) {
-      console.error("Error checking users table:", checkErr);
-      return alert("Error creating password (see console)");
-    }
+document.getElementById("btn-forgot")?.addEventListener("click", () => {
+  screenLogin.classList.add("hidden");
+  screenForgotInline.classList.remove("hidden");
+});
 
-    if (exists && exists.length > 0) return alert("This password already exists!");
-
-    const { error } = await sb.from("users").insert([{ password }]);
-    if (error) {
-      console.error("Insert error:", error);
-      return alert("Error creating password (see console)");
-    }
-
-    alert("Password created!");
-    newPass.value = "";
-  } catch (e) {
-    console.error("Unexpected set error:", e);
-    alert("Unexpected error (see console)");
-  }
+btnBackToLogin?.addEventListener("click", () => {
+  screenForgotInline.classList.add("hidden");
+  screenLogin.classList.remove("hidden");
 });
 
 /* ---------------------------------
-              LOGIN
+      SIGNUP
+---------------------------------- */
+btnSignup?.addEventListener("click", async () => {
+  const email = signupEmail.value.trim();
+  const password = signupPass.value.trim();
+  if (!email || !password) return alert("Enter email and password");
+
+  const { error } = await sb.auth.signUp({ email, password });
+  if (error) return alert(error.message);
+
+  alert("Sign up successful! Check your email for verification (if enabled).");
+  signupEmail.value = signupPass.value = "";
+  // show login
+  screenSignup.classList.add("hidden");
+  screenLogin.classList.remove("hidden");
+});
+
+/* ---------------------------------
+      LOGIN
 ---------------------------------- */
 btnLogin?.addEventListener("click", async () => {
-  const password = loginPass?.value?.trim();
-  if (!password) return alert("Enter password");
+  const email = loginEmail.value.trim();
+  const password = loginPass.value.trim();
+  if (!email || !password) return alert("Enter email and password");
 
-  try {
-    const { data, error } = await sb
-      .from("users")
-      .select("*")
-      .eq("password", password)
-      .limit(1);
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) return alert(error.message);
 
-    if (error) {
-      console.error("Login select error:", error);
-      return alert("Login failed (see console)");
-    }
+  currentUser = data.user;
+  if (!currentUser) return alert("Login failed: no user returned.");
 
-    if (!data || data.length === 0) return alert("Wrong password");
-
-    currentUser = password;
-    loginPass.value = "";
-
-    screenLogin?.classList.add("hidden");
-    screenApp?.classList.remove("hidden");
-
-    await loadNotes();
-    await loadBooks();
-    await loadGallery();
-  } catch (e) {
-    console.error("Unexpected login error:", e);
-    alert("Unexpected error during login (see console)");
-  }
+  userEmailEl.innerText = currentUser.email;
+  showApp();
 });
 
 /* ---------------------------------
-        SCREEN SWITCH
+      FORGOT (send reset email)
 ---------------------------------- */
-btnGoLogin?.addEventListener("click", () => {
-  screenSet?.classList.add("hidden");
-  screenLogin?.classList.remove("hidden");
+btnSendResetInline?.addEventListener("click", async () => {
+  const email = forgotEmailInline.value.trim();
+  if (!email) return alert("Enter email");
+
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: "https://my-notes-jade-five.vercel.app/reset.html"
+  });
+  if (error) return alert(error.message);
+
+  alert("If the email exists, a reset link was sent.");
+  forgotEmailInline.value = "";
+  screenForgotInline.classList.add("hidden");
+  screenLogin.classList.remove("hidden");
 });
-btnGoSet?.addEventListener("click", () => {
-  screenLogin?.classList.add("hidden");
-  screenSet?.classList.remove("hidden");
-});
-btnLogout?.addEventListener("click", () => location.reload());
 
 /* ---------------------------------
-              NOTES
+      SHOW APP
+---------------------------------- */
+function showApp() {
+  screenSignup.classList.add("hidden");
+  screenLogin.classList.add("hidden");
+  screenApp.classList.remove("hidden");
+  loadNotes();
+  loadGallery();
+  loadBooks();
+}
+
+/* ---------------------------------
+      LOGOUT
+---------------------------------- */
+btnLogout?.addEventListener("click", async () => {
+  await sb.auth.signOut();
+  location.reload();
+});
+
+/* ---------------------------------
+      NOTES (table: notes with user_id UUID)
 ---------------------------------- */
 async function loadNotes() {
-  try {
-    const { data = [], error } = await sb
-      .from("notes")
-      .select("*")
-      .eq("user_password", currentUser)
-      .order("id");
+  if (!currentUser) return;
+  const { data = [], error } = await sb
+    .from("notes")
+    .select("*")
+    .eq("user_id", currentUser.id)
+    .order("id");
 
-    if (error) return console.error("loadNotes error:", error);
-
-    notesList.innerHTML = "";
-    data.forEach(n => {
-      const li = document.createElement("li");
-      li.className = "p-2 bg-gray-200 rounded";
-      li.textContent = n.text;
-      notesList.appendChild(li);
-    });
-  } catch (e) {
-    console.error("loadNotes unexpected:", e);
-  }
+  if (error) return console.error("loadNotes:", error);
+  notesList.innerHTML = "";
+  data.forEach(n => {
+    const li = document.createElement("li");
+    li.className = "p-2 bg-gray-100 rounded";
+    li.textContent = n.text;
+    notesList.appendChild(li);
+  });
 }
 
 btnSave?.addEventListener("click", async () => {
-  const text = noteInput?.value?.trim();
+  if (!currentUser) return alert("Not logged in");
+  const text = noteInput.value.trim();
   if (!text) return;
-  try {
-    const { error } = await sb.from("notes").insert([{ text, user_password: currentUser }]);
-    if (error) return alert("Could not save note: " + error.message);
-    noteInput.value = "";
-    await loadNotes();
-  } catch (e) {
-    console.error("saveNote unexpected:", e);
-  }
+  const { error } = await sb.from("notes").insert([{ text, user_id: currentUser.id }]);
+  if (error) return alert(error.message);
+  noteInput.value = "";
+  loadNotes();
 });
 
-btnClear?.addEventListener("click", () => (noteInput.value = ""));
-
 /* ---------------------------------
-              BOOKS
+      GALLERY (table: images with user_id)
 ---------------------------------- */
-async function loadBooks() {
-  try {
-    const { data = [], error } = await sb
-      .from("books")
-      .select("*")
-      .eq("user_password", currentUser)
-      .order("id");
+btnUpload?.addEventListener("click", async () => {
+  if (!currentUser) return alert("Not logged in");
+  const files = imageInput.files;
+  if (!files || files.length === 0) return alert("Select images");
 
-    if (error) return console.error("loadBooks error:", error);
+  for (const file of files) {
+    const filename = `${currentUser.id}_${Date.now()}_${file.name}`;
+    const path = `Gallery/${filename}`;
 
-    booksList.innerHTML = "";
-    data.forEach(b => {
-      const li = document.createElement("li");
-      li.className = "p-3 bg-purple-200 rounded";
-      li.innerHTML = `
-        <div class="font-medium mb-1">${b.text || "(No text)"}</div>
-        <div class="flex gap-4">
-          ${b.file_url ? `<a href="${b.file_url}" class="text-blue-700 underline" download>Download</a>` : ""}
-        </div>
-      `;
-      booksList.appendChild(li);
-    });
-  } catch (e) {
-    console.error("loadBooks unexpected:", e);
-  }
-}
-
-btnUploadBook?.addEventListener("click", async () => {
-  const text = bookText?.value?.trim();
-  const file = bookFile?.files[0];
-  if (!text && !file) return alert("Add text or choose a file");
-
-  try {
-    let fileURL = null;
-    if (file) {
-      const filename = `${currentUser}_${Date.now()}_${file.name}`;
-      const path = `${BOOK_FOLDER}/${filename}`;
-
-      const { error: uploadErr } = await sb.storage.from(BUCKET).upload(path, file);
-      if (uploadErr) return alert("Upload failed: " + uploadErr.message);
-
-      const { data: pubData } = sb.storage.from(BUCKET).getPublicUrl(path);
-      fileURL = pubData?.publicUrl ?? null;
+    const { error: uploadErr } = await sb.storage.from("images").upload(path, file);
+    if (uploadErr) {
+      console.error("uploadErr", uploadErr);
+      continue;
     }
-
-    const { error } = await sb.from("books").insert([{ text, file_url: fileURL, user_password: currentUser }]);
-    if (error) return alert("Could not save book: " + error.message);
-
-    bookText.value = "";
-    bookFile.value = "";
-    await loadBooks();
-    alert("Book saved!");
-  } catch (e) {
-    console.error("uploadBook unexpected:", e);
+    const { data } = sb.storage.from("images").getPublicUrl(path);
+    const url = data?.publicUrl ?? null;
+    if (url) {
+      await sb.from("images").insert([{ file_url: url, user_id: currentUser.id }]);
+    }
   }
+  imageInput.value = "";
+  loadGallery();
 });
-
-/* ---------------------------------
-              GALLERY
----------------------------------- */
-btnChoose?.addEventListener("click", () => imageInput?.click());
 
 async function loadGallery() {
-  try {
-    const { data = [], error } = await sb
-      .from("images")
-      .select("*")
-      .eq("user_password", currentUser)
-      .order("id");
-
-    if (error) return console.error("loadGallery error:", error);
-
-    galleryGrid.innerHTML = "";
-    data.forEach(i => {
-      const img = document.createElement("img");
-      img.src = i.file_url;
-      img.className = "w-full h-40 object-cover rounded cursor-pointer";
-      img.onclick = () => {
-        document.getElementById("popup-img").src = i.file_url;
-        document.getElementById("image-popup").classList.remove("hidden");
-      };
-      galleryGrid.appendChild(img);
-    });
-
-    imgCount.innerText = data.length;
-  } catch (e) {
-    console.error("loadGallery unexpected:", e);
-  }
+  if (!currentUser) return;
+  const { data = [], error } = await sb.from("images").select("*").eq("user_id", currentUser.id).order("id");
+  if (error) return console.error("loadGallery", error);
+  galleryGrid.innerHTML = "";
+  data.forEach(i => {
+    const img = document.createElement("img");
+    img.src = i.file_url;
+    img.className = "w-full h-24 object-cover rounded mb-2";
+    galleryGrid.appendChild(img);
+  });
 }
-
-btnUpload?.addEventListener("click", async () => {
-  const files = imageInput?.files;
-  if (!files || !files.length) return alert("Select images");
-
-  try {
-    for (let file of files) {
-      const filename = `${currentUser}_${Date.now()}_${file.name}`;
-      const path = `Gallery/${filename}`;
-
-      const { error: uploadErr } = await sb.storage.from(BUCKET).upload(path, file);
-      if (uploadErr) {
-        console.error("image upload error:", uploadErr);
-        continue;
-      }
-
-      const { data: pubData } = sb.storage.from(BUCKET).getPublicUrl(path);
-      const url = pubData?.publicUrl ?? null;
-
-      await sb.from("images").insert([{ file_url: url, user_password: currentUser }]);
-    }
-
-    imageInput.value = "";
-    await loadGallery();
-    alert("Images uploaded!");
-  } catch (e) {
-    console.error("uploadImages unexpected:", e);
-  }
-});
 
 /* ---------------------------------
-            TABS & IMAGE POPUP
+      BOOKS (table: books with user_id)
 ---------------------------------- */
-function showPanel(p) {
-  ["notes", "gallery", "books"].forEach(name => {
-    document.getElementById(`panel-${name}`).classList.add("hidden");
-    document.getElementById(`tab-${name}`).classList.remove("bg-indigo-600", "text-white");
-  });
+btnUploadBook?.addEventListener("click", async () => {
+  if (!currentUser) return alert("Not logged in");
+  const file = bookFile.files[0];
+  let fileURL = null;
+  if (file) {
+    const filename = `${currentUser.id}_${Date.now()}_${file.name}`;
+    const path = `BooksDocs/${filename}`;
+    const { error: uploadErr } = await sb.storage.from("images").upload(path, file);
+    if (uploadErr) return alert(uploadErr.message);
+    const { data } = sb.storage.from("images").getPublicUrl(path);
+    fileURL = data?.publicUrl ?? null;
+  }
+  const text = bookText.value.trim();
+  const { error } = await sb.from("books").insert([{ text, file_url: fileURL, user_id: currentUser.id }]);
+  if (error) return alert(error.message);
+  bookText.value = "";
+  bookFile.value = "";
+  loadBooks();
+});
 
-  document.getElementById(`panel-${p}`).classList.remove("hidden");
-  document.getElementById(`tab-${p}`).classList.add("bg-indigo-600", "text-white");
+async function loadBooks() {
+  if (!currentUser) return;
+  const { data = [], error } = await sb.from("books").select("*").eq("user_id", currentUser.id).order("id");
+  if (error) return console.error("loadBooks", error);
+  booksList.innerHTML = "";
+  data.forEach(b => {
+    const li = document.createElement("li");
+    li.className = "p-2 bg-gray-50 rounded";
+    li.innerHTML = `<div class="font-medium">${b.text || "(No text)"}</div>
+                    ${b.file_url ? `<a href="${b.file_url}" class="text-blue-600 underline" download>Download</a>` : ''}`;
+    booksList.appendChild(li);
+  });
 }
 
-document.getElementById("tab-notes").onclick = () => showPanel("notes");
-document.getElementById("tab-gallery").onclick = () => showPanel("gallery");
-document.getElementById("tab-books").onclick = () => showPanel("books");
+/* ---------------------------------
+   PASSWORD RESET: handle recovery flow on reset.html
+---------------------------------- */
+sb.auth.onAuthStateChange(async (event, session) => {
+  // When user opens the reset link Supabase emits PASSWORD_RECOVERY
+  if (event === "PASSWORD_RECOVERY") {
+    // On the reset page (reset.html) this code will prompt user to enter new password
+    // (we also handle it if they open index while having recovery session)
+    const newPass = prompt("Enter your new password:");
+    if (!newPass) return alert("No password entered");
+    const { error } = await sb.auth.updateUser({ password: newPass });
+    if (error) return alert(error.message);
+    alert("Password updated. Please login with your new password.");
+    // optional: redirect to index (login)
+   window.location.href = "https://my-notes-jade-five.vercel.app";
 
-document.getElementById("image-popup").onclick = () =>
-  document.getElementById("image-popup").classList.add("hidden");
+  }
+});
