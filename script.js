@@ -27,7 +27,6 @@ const btnForgot = document.getElementById("btn-forgot");
 const gotoSignup = document.getElementById("goto-signup");
 
 const btnLogout = document.getElementById("btn-logout");
-const userEmailEl = document.getElementById("user-email");
 
 /* notes/gallery/books elements */
 const noteInput = document.getElementById("note-input");
@@ -43,7 +42,7 @@ const bookFile = document.getElementById("book-file");
 const btnUploadBook = document.getElementById("btn-upload-book");
 const booksList = document.getElementById("books-list");
 
-/* inline forgot (optional) */
+/* inline forgot */
 const screenForgotInline = document.getElementById("screen-forgot-inline");
 const forgotEmailInline = document.getElementById("forgot-email-inline");
 const btnSendResetInline = document.getElementById("btn-send-reset-inline");
@@ -57,12 +56,12 @@ gotoLogin?.addEventListener("click", () => {
   screenLogin.classList.remove("hidden");
 });
 
-document.getElementById("goto-signup")?.addEventListener("click", () => {
+gotoSignup?.addEventListener("click", () => {
   screenLogin.classList.add("hidden");
   screenSignup.classList.remove("hidden");
 });
 
-document.getElementById("btn-forgot")?.addEventListener("click", () => {
+btnForgot?.addEventListener("click", () => {
   screenLogin.classList.add("hidden");
   screenForgotInline.classList.remove("hidden");
 });
@@ -85,7 +84,6 @@ btnSignup?.addEventListener("click", async () => {
 
   alert("Sign up successful! Check your email for verification (if enabled).");
   signupEmail.value = signupPass.value = "";
-  // show login
   screenSignup.classList.add("hidden");
   screenLogin.classList.remove("hidden");
 });
@@ -104,7 +102,6 @@ btnLogin?.addEventListener("click", async () => {
   currentUser = data.user;
   if (!currentUser) return alert("Login failed: no user returned.");
 
-  userEmailEl.innerText = currentUser.email;
   showApp();
 });
 
@@ -133,6 +130,8 @@ function showApp() {
   screenSignup.classList.add("hidden");
   screenLogin.classList.add("hidden");
   screenApp.classList.remove("hidden");
+  loginEmail.value = "";
+  loginPass.value = "";
   loadNotes();
   loadGallery();
   loadBooks();
@@ -147,7 +146,7 @@ btnLogout?.addEventListener("click", async () => {
 });
 
 /* ---------------------------------
-      NOTES (table: notes with user_id UUID)
+      NOTES
 ---------------------------------- */
 async function loadNotes() {
   if (!currentUser) return;
@@ -178,7 +177,7 @@ btnSave?.addEventListener("click", async () => {
 });
 
 /* ---------------------------------
-      GALLERY (table: images with user_id)
+      GALLERY
 ---------------------------------- */
 btnUpload?.addEventListener("click", async () => {
   if (!currentUser) return alert("Not logged in");
@@ -218,7 +217,7 @@ async function loadGallery() {
 }
 
 /* ---------------------------------
-      BOOKS (table: books with user_id)
+      BOOKS
 ---------------------------------- */
 btnUploadBook?.addEventListener("click", async () => {
   if (!currentUser) return alert("Not logged in");
@@ -255,20 +254,15 @@ async function loadBooks() {
 }
 
 /* ---------------------------------
-   PASSWORD RESET: handle recovery flow on reset.html
+   PASSWORD RESET
 ---------------------------------- */
 sb.auth.onAuthStateChange(async (event, session) => {
-  // When user opens the reset link Supabase emits PASSWORD_RECOVERY
   if (event === "PASSWORD_RECOVERY") {
-    // On the reset page (reset.html) this code will prompt user to enter new password
-    // (we also handle it if they open index while having recovery session)
     const newPass = prompt("Enter your new password:");
     if (!newPass) return alert("No password entered");
     const { error } = await sb.auth.updateUser({ password: newPass });
     if (error) return alert(error.message);
     alert("Password updated. Please login with your new password.");
-    // optional: redirect to index (login)
-   window.location.href = "https://my-notes-jade-five.vercel.app";
-
+    window.location.href = "https://my-notes-jade-five.vercel.app";
   }
 });
