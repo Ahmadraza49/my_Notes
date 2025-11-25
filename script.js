@@ -179,14 +179,14 @@ btnSave.addEventListener("click", async () => {
       FULLSCREEN POPUP
 ---------------------------------- */
 function openFullscreen(url) {
-  popupImg.src = url;
+  popupImg.src = url; // set full-size image
   imagePopup.classList.remove("hidden");
 }
 
 imagePopup.addEventListener("click", () => {
   imagePopup.classList.add("hidden");
+  popupImg.src = ""; // free memory
 });
-
 /* ---------------------------------
       GALLERY
 ---------------------------------- */
@@ -198,16 +198,44 @@ btnUpload.addEventListener("click", async () => {
     const name = `${currentUser.id}_${Date.now()}_${file.name}`;
     const path = `Gallery/${name}`;
 
-    await sb.storage.from("images").upload(path, file, { cacheControl: "3600", upsert: false });
-    const { data } = sb.storage.from("images").getPublicUrl(path);
+    // upload file
+    const { error: uploadError } = await sb.storage.from("images").upload(path, file, { cacheControl: "3600", upsert: false });
+    if (uploadError) {
+      console.error("Upload error:", uploadError);
+      continue;
+    }
 
-    await sb.from("images").insert([
-      { file_url: data.publicUrl, user_id: currentUser.id },
-    ]);
+    // get public URL
+    const { data: urlData } = sb.storage.from("images").getPublicUrl(path);
+    const publicUrl = urlData.publicUrl;
+
+    // insert into database
+    await sb.from("images").insert([{ file_url: publicUrl, user_id: currentUser.id }]);
   }
 
   loadGallery();
 });
+
+async function loadGallery() {
+  const { data = [], error } = await sb
+    .from("images")
+    .select("*")
+    .eq("user_id", currentUser.id)
+    .order("id");
+
+  if (error) return console.error("Error loading images:", error);
+
+  galleryGrid.innerHTML = "";
+
+  data.forEach((imgObj) => {
+    const img = document.createElement("img");
+    img.src = imgObj.file_url;
+    img.className = "w-full h-44 object-cover rounded-xl shadow cursor-pointer";
+    img.loading = "lazy"; // speeds up initial load
+    img.addEventListener("click", () => openFullscreen(imgObj.file_url));
+    galleryGrid.appendChild(img);
+  });
+} 
 
 async function loadGallery() {
   const { data = [] } = await sb
