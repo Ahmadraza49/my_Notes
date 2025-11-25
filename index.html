@@ -3,138 +3,98 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Password-protected Notes, Gallery & Books</title>
+  <title>My Notes App</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    /* small helper for nicer inputs */
+    .input { @apply w-full p-2 border rounded }
+    .btn { @apply px-4 py-2 rounded }
+  </style>
 </head>
 
-<body class="min-h-screen bg-cover bg-center bg-fixed flex items-center justify-center p-6"
-  style="background-image: url('https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1800&q=80');">
+<body class="min-h-screen p-6" style="background-color:#f3f4f6">
+  <div class="max-w-4xl mx-auto">
+    <div class="bg-white p-6 rounded-xl shadow-lg">
+      <h1 class="text-2xl font-bold text-center mb-4">🔐 My Notes — Signup / Login</h1>
 
-  <div class="w-full max-w-5xl bg-white/85 backdrop-blur-md rounded-2xl shadow-xl p-6">
-    <h1 class="text-3xl font-semibold mb-4 text-center">🔐 Password-protected Notes, Gallery & Books</h1>
-
-    <!-- SET PASSWORD -->
-    <div id="screen-set" class="space-y-4">
-      <p class="text-sm text-slate-600">Set password here</p>
-
-      <div class="relative">
-        <input id="new-pass" type="password" placeholder="New password" class="w-full p-3 border rounded-md pr-10" />
-        <button id="toggle-new-pass" class="absolute right-2 top-2.5 p-1" aria-label="Show password">
-          <!-- Eye SVG -->
-          <svg id="new-pass-eye" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M2.458 12C3.732 7.943 7.523 5 12 5s8.268 2.943 9.542 7c-1.274 4.057-5.065 7-9.542 7s-8.268-2.943-9.542-7z" />
-          </svg>
-        </button>
-      </div>
-
-      <div class="flex gap-2">
-        <button id="btn-set" class="px-4 py-2 bg-blue-600 text-white rounded">Set password</button>
-        <button id="btn-go-login" class="px-4 py-2 border rounded">Go to login</button>
-      </div>
-    </div>
-
-    <!-- LOGIN -->
-    <div id="screen-login" class="hidden space-y-4">
-      <p class="text-sm text-slate-600">Enter your password</p>
-
-      <div class="relative">
-        <input id="login-pass" type="password" placeholder="Password" class="w-full p-3 border rounded-md pr-10" />
-        <button id="toggle-login-pass" class="absolute right-2 top-2.5 p-1" aria-label="Show password">
-          <!-- Eye SVG -->
-          <svg id="login-pass-eye" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M2.458 12C3.732 7.943 7.523 5 12 5s8.268 2.943 9.542 7c-1.274 4.057-5.065 7-9.542 7s-8.268-2.943-9.542-7z" />
-          </svg>
-        </button>
-      </div>
-
-      <div class="flex gap-2">
-        <button id="btn-login" class="px-4 py-2 bg-green-600 text-white rounded">Unlock</button>
-        <button id="btn-go-set" class="px-4 py-2 border rounded">Go to set password</button>
-      </div>
-    </div>
-
-    <!-- MAIN APP -->
-    <div id="screen-app" class="hidden">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-medium">My Notes, Gallery & Books</h2>
-        <button id="btn-logout" class="px-3 py-1 border rounded">Logout</button>
-      </div>
-
-      <!-- TABS -->
-      <div class="flex gap-2 mb-4">
-        <button id="tab-notes" class="px-4 py-2 bg-indigo-600 text-white rounded">Notes</button>
-        <button id="tab-gallery" class="px-4 py-2 border rounded">Gallery</button>
-        <button id="tab-books" class="px-4 py-2 border rounded">Books</button>
-      </div>
-
-      <!-- NOTES -->
-      <div id="panel-notes">
-        <textarea id="note-input" rows="6" class="w-full p-3 border rounded mb-3" placeholder="Type your note here..."></textarea>
-        <div class="flex gap-2 mb-4">
-          <button id="btn-save" class="px-4 py-2 bg-indigo-600 text-white rounded">Save note</button>
-          <button id="btn-clear" class="px-4 py-2 border rounded">Clear</button>
+      <!-- SIGNUP -->
+      <div id="screen-signup" class="space-y-3">
+        <h2 class="font-semibold">Create Account</h2>
+        <input id="signup-email" type="email" class="input" placeholder="Email (you@domain.com)">
+        <input id="signup-pass" type="password" class="input" placeholder="Password (min 6 chars)">
+        <div class="flex gap-2">
+          <button id="btn-signup" class="btn bg-blue-600 text-white">Sign Up</button>
+          <button id="goto-login" class="btn border">Already have an account?</button>
         </div>
-        <ul id="notes-list" class="space-y-2"></ul>
       </div>
 
-      <!-- GALLERY -->
-      <div id="panel-gallery" class="hidden">
-        <div class="flex items-center justify-between mb-3">
-          <!-- Buttons area: uses flex-wrap + gap so on small screens they don't stick -->
-          <div class="flex flex-wrap gap-3">
-            <input id="image-input" type="file" accept="image/*" multiple class="hidden" />
+      <!-- LOGIN -->
+      <div id="screen-login" class="hidden space-y-3">
+        <h2 class="font-semibold">Login</h2>
+        <input id="login-email" type="email" class="input" placeholder="Email">
+        <input id="login-pass" type="password" class="input" placeholder="Password">
+        <div class="flex gap-2">
+          <button id="btn-login" class="btn bg-green-600 text-white">Login</button>
+          <button id="goto-signup" class="btn border">Create new account</button>
+        </div>
+        <div>
+          <button id="btn-forgot" class="text-blue-700 underline">Forgot password?</button>
+        </div>
+      </div>
 
-            <button id="btn-choose" class="px-4 py-2 bg-green-600 text-white rounded">
-              Choose Images
-            </button>
+      <!-- FORGOT (inline fallback if you want) -->
+      <div id="screen-forgot-inline" class="hidden space-y-3">
+        <h2 class="font-semibold">Reset password (send email)</h2>
+        <input id="forgot-email-inline" type="email" class="input" placeholder="Enter your email">
+        <div class="flex gap-2">
+          <button id="btn-send-reset-inline" class="btn bg-indigo-600 text-white">Send Reset Link</button>
+          <button id="btn-back-to-login" class="btn border">Back</button>
+        </div>
+      </div>
 
-            <button id="btn-upload" class="px-4 py-2 bg-blue-600 text-white rounded">
-              Upload Selected
-            </button>
+      <!-- APP -->
+      <div id="screen-app" class="hidden mt-6">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-lg font-bold">My Notes, Gallery & Books</h2>
+          <div class="flex gap-2 items-center">
+            <span id="user-email" class="text-sm text-gray-600"></span>
+            <button id="btn-logout" class="btn border">Logout</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <!-- Left: Notes -->
+          <div class="md:col-span-2">
+            <textarea id="note-input" rows="5" class="w-full p-3 border rounded mb-2" placeholder="Write a note..."></textarea>
+            <div class="flex gap-2 mb-4">
+              <button id="btn-save" class="btn bg-indigo-600 text-white">Save note</button>
+              <button id="btn-clear" class="btn border">Clear</button>
+            </div>
+            <ul id="notes-list" class="space-y-2"></ul>
           </div>
 
-          <!-- Image count -->
-          <div class="text-sm text-slate-600">Images: <span id="img-count">0</span></div>
+          <!-- Right: Gallery & Books -->
+          <div>
+            <h3 class="font-semibold mb-2">Gallery</h3>
+            <input id="image-input" type="file" accept="image/*" multiple class="mb-2" />
+            <div class="flex gap-2 mb-4">
+              <button id="btn-upload" class="btn bg-blue-600 text-white">Upload Images</button>
+            </div>
+            <div id="gallery-grid" class="grid grid-cols-2 gap-2 mb-4"></div>
+
+            <h3 class="font-semibold mt-3 mb-2">Books</h3>
+            <textarea id="book-text" rows="3" class="w-full p-2 border rounded mb-2" placeholder="Book note or description"></textarea>
+            <input id="book-file" type="file" accept=".pdf,.doc,.docx,.txt,.jpg,.png" class="mb-2" />
+            <button id="btn-upload-book" class="btn bg-purple-600 text-white w-full">Upload Book</button>
+            <ul id="books-list" class="space-y-2 mt-3"></ul>
+          </div>
         </div>
-
-        <!-- gallery grid -->
-        <div id="gallery-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"></div>
       </div>
 
-      <!-- BOOKS -->
-      <div id="panel-books" class="hidden mt-3">
-        <h2 class="text-lg font-semibold mb-3">📚 Add Book Document</h2>
-
-        <textarea id="book-text" rows="5" class="w-full p-3 border rounded mb-3"
-          placeholder="Write your book content here..."></textarea>
-
-        <input id="book-file" type="file" accept=".pdf,.doc,.docx,.txt,.jpg,.png" class="mb-3" />
-
-        <button id="btn-upload-book" class="px-4 py-2 bg-purple-600 text-white rounded">
-          Upload Book Document
-        </button>
-
-        <h3 class="mt-5 mb-2 text-lg font-medium">📂 My Book Documents</h3>
-
-        <ul id="books-list" class="space-y-3"></ul>
-      </div>
     </div>
-  </div>
-
-  <!-- FULL IMAGE POPUP -->
-  <div id="image-popup" class="fixed inset-0 bg-black bg-opacity-90 hidden flex items-center justify-center z-50">
-    <img id="popup-img" class="max-w-[95vw] max-h-[95vh] object-contain rounded shadow-lg" />
   </div>
 
   <script src="script.js"></script>
 </body>
 </html>
-
-
