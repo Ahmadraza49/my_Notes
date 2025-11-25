@@ -29,6 +29,7 @@ const btnLogout = document.getElementById("btn-logout");
 /* notes */
 const noteInput = document.getElementById("note-input");
 const btnSave = document.getElementById("btn-save");
+const btnClear = document.getElementById("btn-clear");
 const notesList = document.getElementById("notes-list");
 
 /* gallery */
@@ -47,7 +48,6 @@ const screenForgotInline = document.getElementById("screen-forgot-inline");
 const forgotEmailInline = document.getElementById("forgot-email-inline");
 const btnSendResetInline = document.getElementById("btn-send-reset-inline");
 const btnBackToLogin = document.getElementById("btn-back-to-login");
-
 
 /* ---------------------------------
      SCREEN SWITCHING
@@ -72,7 +72,6 @@ btnBackToLogin.addEventListener("click", () => {
   screenLogin.classList.remove("hidden");
 });
 
-
 /* ---------------------------------
       SIGNUP
 ---------------------------------- */
@@ -90,7 +89,6 @@ btnSignup.addEventListener("click", async () => {
   screenLogin.classList.remove("hidden");
 });
 
-
 /* ---------------------------------
       LOGIN
 ---------------------------------- */
@@ -106,7 +104,6 @@ btnLogin.addEventListener("click", async () => {
   showApp();
 });
 
-
 /* ---------------------------------
       FORGOT PASSWORD
 ---------------------------------- */
@@ -120,7 +117,6 @@ btnSendResetInline.addEventListener("click", async () => {
 
   alert("Reset link sent if email exists.");
 });
-
 
 /* ---------------------------------
      SHOW APP
@@ -136,15 +132,20 @@ function showApp() {
   loadBooks();
 }
 
-
 /* ---------------------------------
      LOGOUT
 ---------------------------------- */
 btnLogout.addEventListener("click", async () => {
   await sb.auth.signOut();
-  location.reload();
-});
 
+  currentUser = null;
+  notesList.innerHTML = "";
+  galleryGrid.innerHTML = "";
+  booksList.innerHTML = "";
+
+  screenApp.classList.add("hidden");
+  screenLogin.classList.remove("hidden");
+});
 
 /* ---------------------------------
       NOTES
@@ -174,9 +175,12 @@ btnSave.addEventListener("click", async () => {
   loadNotes();
 });
 
+btnClear.addEventListener("click", () => {
+  noteInput.value = "";
+});
 
 /* ---------------------------------
-   FULLSCREEN POPUP (Connected to HTML Popup)
+   FULLSCREEN POPUP
 ---------------------------------- */
 function openFullscreen(url) {
   const popup = document.getElementById("image-popup");
@@ -186,11 +190,9 @@ function openFullscreen(url) {
   popup.classList.remove("hidden");
 }
 
-/* Close popup on click */
 document.getElementById("image-popup").addEventListener("click", () => {
   document.getElementById("image-popup").classList.add("hidden");
 });
-
 
 /* ---------------------------------
       GALLERY
@@ -205,9 +207,10 @@ btnUpload.addEventListener("click", async () => {
 
     await sb.storage.from("images").upload(path, file);
     const { data } = sb.storage.from("images").getPublicUrl(path);
+    const publicUrl = data.publicUrl;
 
     await sb.from("images").insert([
-      { file_url: data.publicUrl, user_id: currentUser.id },
+      { file_url: publicUrl, user_id: currentUser.id },
     ]);
   }
 
@@ -228,11 +231,10 @@ async function loadGallery() {
     img.src = imgObj.file_url;
     img.className = "w-full h-44 object-cover rounded-xl shadow cursor-pointer";
 
-    img.onclick = () => openFullscreen(imgObj.file_url);
+    img.addEventListener("click", () => openFullscreen(imgObj.file_url));
     galleryGrid.appendChild(img);
   });
 }
-
 
 /* ---------------------------------
       BOOKS
@@ -253,6 +255,8 @@ btnUploadBook.addEventListener("click", async () => {
     { text: bookText.value.trim(), file_url: fileURL, user_id: currentUser.id },
   ]);
 
+  bookText.value = "";
+  bookFile.value = "";
   loadBooks();
 });
 
@@ -270,7 +274,7 @@ async function loadBooks() {
     li.className = "p-2 bg-gray-100 rounded";
     li.innerHTML = `
       <div>${b.text}</div>
-      ${b.file_url ? `<a href="${b.file_url}" class="text-blue-600 underline">Download</a>` : ""}
+      ${b.file_url ? `<a href="${b.file_url}" class="text-blue-600 underline" target="_blank">Download</a>` : ""}
     `;
     booksList.appendChild(li);
   });
