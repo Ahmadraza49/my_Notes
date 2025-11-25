@@ -60,7 +60,7 @@
           <button id="btn-logout" class="btn border">Logout</button>
         </div>
 
-        <!-- NOTES full width -->
+        <!-- NOTES -->
         <div class="mb-6">
           <textarea id="note-input" rows="5" class="w-full p-3 border rounded mb-2" placeholder="Write a note..."></textarea>
           <div class="flex gap-2 mb-4">
@@ -70,7 +70,7 @@
           <ul id="notes-list" class="space-y-2"></ul>
         </div>
 
-        <!-- GALLERY (bigger images + fullscreen) -->
+        <!-- GALLERY -->
         <div class="mb-8">
           <h3 class="font-semibold mb-2">Gallery</h3>
           <input id="image-input" type="file" accept="image/*" multiple class="mb-2" />
@@ -92,7 +92,12 @@
       </div>
     </div>
   </div>
+<!-- FULL IMAGE POPUP -->
+<div id="image-popup" class="fixed inset-0 bg-black bg-opacity-90 hidden flex items-center justify-center z-50">
+  <img id="popup-img" class="max-w-[95vw] max-h-[95vh] object-contain rounded-xl shadow-lg" />
+</div>
 
-  <script src="script.js"></script>
+ <script src="script.js"></script>
+
 </body>
 </html>
