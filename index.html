@@ -6,16 +6,17 @@
   <title>My Notes App</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
-    /* small helper for nicer inputs */
     .input { @apply w-full p-2 border rounded }
     .btn { @apply px-4 py-2 rounded }
   </style>
 </head>
 
-<body class="min-h-screen p-6" style="background-color:#f3f4f6">
+<body class="min-h-screen p-6 bg-gray-100">
   <div class="max-w-4xl mx-auto">
     <div class="bg-white p-6 rounded-xl shadow-lg">
+      
       <h1 class="text-2xl font-bold text-center mb-4">🔐 My Notes — Signup / Login</h1>
 
       <!-- SIGNUP -->
@@ -38,15 +39,13 @@
           <button id="btn-login" class="btn bg-green-600 text-white">Login</button>
           <button id="goto-signup" class="btn border">Create new account</button>
         </div>
-        <div>
-          <button id="btn-forgot" class="text-blue-700 underline">Forgot password?</button>
-        </div>
+        <button id="btn-forgot" class="text-blue-700 underline">Forgot password?</button>
       </div>
 
-      <!-- FORGOT (inline fallback if you want) -->
+      <!-- FORGOT PASSWORD -->
       <div id="screen-forgot-inline" class="hidden space-y-3">
-        <h2 class="font-semibold">Reset password (send email)</h2>
-        <input id="forgot-email-inline" type="email" class="input" placeholder="Enter your email">
+        <h2 class="font-semibold">Reset password</h2>
+        <input id="forgot-email-inline" type="email" class="input" placeholder="Your email">
         <div class="flex gap-2">
           <button id="btn-send-reset-inline" class="btn bg-indigo-600 text-white">Send Reset Link</button>
           <button id="btn-back-to-login" class="btn border">Back</button>
@@ -55,43 +54,42 @@
 
       <!-- APP -->
       <div id="screen-app" class="hidden mt-6">
+
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-lg font-bold">My Notes, Gallery & Books</h2>
-          <div class="flex gap-2 items-center">
-            <!-- <span id="user-email" class="text-sm text-gray-600"></span> -->
-            <button id="btn-logout" class="btn border">Logout</button>
-          </div>
+          <button id="btn-logout" class="btn border">Logout</button>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <!-- Left: Notes -->
-          <div class="md:col-span-2">
-            <textarea id="note-input" rows="5" class="w-full p-3 border rounded mb-2" placeholder="Write a note..."></textarea>
-            <div class="flex gap-2 mb-4">
-              <button id="btn-save" class="btn bg-indigo-600 text-white">Save note</button>
-              <button id="btn-clear" class="btn border">Clear</button>
-            </div>
-            <ul id="notes-list" class="space-y-2"></ul>
+        <!-- NOTES full width -->
+        <div class="mb-6">
+          <textarea id="note-input" rows="5" class="w-full p-3 border rounded mb-2" placeholder="Write a note..."></textarea>
+          <div class="flex gap-2 mb-4">
+            <button id="btn-save" class="btn bg-indigo-600 text-white">Save note</button>
+            <button id="btn-clear" class="btn border">Clear</button>
           </div>
-
-          <!-- Right: Gallery & Books -->
-          <div>
-            <h3 class="font-semibold mb-2">Gallery</h3>
-            <input id="image-input" type="file" accept="image/*" multiple class="mb-2" />
-            <div class="flex gap-2 mb-4">
-              <button id="btn-upload" class="btn bg-blue-600 text-white">Upload Images</button>
-            </div>
-            <div id="gallery-grid" class="grid grid-cols-2 gap-2 mb-4"></div>
-
-            <h3 class="font-semibold mt-3 mb-2">Books</h3>
-            <textarea id="book-text" rows="3" class="w-full p-2 border rounded mb-2" placeholder="Book note or description"></textarea>
-            <input id="book-file" type="file" accept=".pdf,.doc,.docx,.txt,.jpg,.png" class="mb-2" />
-            <button id="btn-upload-book" class="btn bg-purple-600 text-white w-full">Upload Book</button>
-            <ul id="books-list" class="space-y-2 mt-3"></ul>
-          </div>
+          <ul id="notes-list" class="space-y-2"></ul>
         </div>
+
+        <!-- GALLERY (bigger images + fullscreen) -->
+        <div class="mb-8">
+          <h3 class="font-semibold mb-2">Gallery</h3>
+          <input id="image-input" type="file" accept="image/*" multiple class="mb-2" />
+          <button id="btn-upload" class="btn bg-blue-600 text-white mb-3">Upload Images</button>
+
+          <div id="gallery-grid" class="grid grid-cols-2 gap-3"></div>
+        </div>
+
+        <!-- BOOKS -->
+        <div class="mt-6">
+          <h3 class="font-semibold mb-2">Books</h3>
+          <textarea id="book-text" rows="3" class="w-full p-2 border rounded mb-2" placeholder="Book description"></textarea>
+          <input id="book-file" type="file" accept=".pdf,.doc,.docx,.txt,.jpg,.png" class="mb-2" />
+          <button id="btn-upload-book" class="btn bg-purple-600 text-white w-full">Upload Book</button>
+
+          <ul id="books-list" class="space-y-2 mt-3"></ul>
+        </div>
+
       </div>
-
     </div>
   </div>
 
