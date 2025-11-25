@@ -48,6 +48,7 @@ const forgotEmailInline = document.getElementById("forgot-email-inline");
 const btnSendResetInline = document.getElementById("btn-send-reset-inline");
 const btnBackToLogin = document.getElementById("btn-back-to-login");
 
+
 /* ---------------------------------
      SCREEN SWITCHING
 ---------------------------------- */
@@ -71,6 +72,7 @@ btnBackToLogin.addEventListener("click", () => {
   screenLogin.classList.remove("hidden");
 });
 
+
 /* ---------------------------------
       SIGNUP
 ---------------------------------- */
@@ -88,6 +90,7 @@ btnSignup.addEventListener("click", async () => {
   screenLogin.classList.remove("hidden");
 });
 
+
 /* ---------------------------------
       LOGIN
 ---------------------------------- */
@@ -103,6 +106,7 @@ btnLogin.addEventListener("click", async () => {
   showApp();
 });
 
+
 /* ---------------------------------
       FORGOT PASSWORD
 ---------------------------------- */
@@ -116,6 +120,7 @@ btnSendResetInline.addEventListener("click", async () => {
 
   alert("Reset link sent if email exists.");
 });
+
 
 /* ---------------------------------
      SHOW APP
@@ -131,6 +136,7 @@ function showApp() {
   loadBooks();
 }
 
+
 /* ---------------------------------
      LOGOUT
 ---------------------------------- */
@@ -138,6 +144,7 @@ btnLogout.addEventListener("click", async () => {
   await sb.auth.signOut();
   location.reload();
 });
+
 
 /* ---------------------------------
       NOTES
@@ -167,34 +174,22 @@ btnSave.addEventListener("click", async () => {
   loadNotes();
 });
 
+
 /* ---------------------------------
-      FULLSCREEN VIEWER (Improved)
+   FULLSCREEN POPUP (Connected to HTML Popup)
 ---------------------------------- */
 function openFullscreen(url) {
-  const overlay = document.createElement("div");
-  overlay.style.cssText = `
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.92);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 99999;
-  `;
+  const popup = document.getElementById("image-popup");
+  const popupImg = document.getElementById("popup-img");
 
-  const img = document.createElement("img");
-  img.src = url;
-  img.style.cssText = `
-    max-width: 95%;
-    max-height: 95%;
-    border-radius: 12px;
-    box-shadow: 0 0 20px rgba(255,255,255,0.4);
-  `;
-
-  overlay.appendChild(img);
-  overlay.addEventListener("click", () => overlay.remove());
-  document.body.appendChild(overlay);
+  popupImg.src = url;
+  popup.classList.remove("hidden");
 }
+
+/* Close popup on click */
+document.getElementById("image-popup").addEventListener("click", () => {
+  document.getElementById("image-popup").classList.add("hidden");
+});
 
 
 /* ---------------------------------
@@ -231,12 +226,13 @@ async function loadGallery() {
   data.forEach((imgObj) => {
     const img = document.createElement("img");
     img.src = imgObj.file_url;
-   img.className = "w-full h-44 object-cover rounded-xl shadow cursor-pointer";
+    img.className = "w-full h-44 object-cover rounded-xl shadow cursor-pointer";
 
     img.onclick = () => openFullscreen(imgObj.file_url);
     galleryGrid.appendChild(img);
   });
 }
+
 
 /* ---------------------------------
       BOOKS
@@ -279,4 +275,3 @@ async function loadBooks() {
     booksList.appendChild(li);
   });
 }
-
