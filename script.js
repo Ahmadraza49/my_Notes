@@ -3,7 +3,7 @@
 ---------------------------------- */
 const sb = window.supabase.createClient(
   "https://ytxhlihzxgftffaikumr.supabase.co",
-  "YOUR_KEY"
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl0eGhsaWh6eGdmdGZmYWlrdW1yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM4ODAxNTgsImV4cCI6MjA3OTQ1NjE1OH0._k5hfgJwVSrbXtlRDt3ZqCYpuU1k-_OqD7M0WML4ehAY"
 );
 
 let currentUser = null;
@@ -268,3 +268,4 @@ async function loadBooks() {
     booksList.appendChild(li);
   });
 }
+
