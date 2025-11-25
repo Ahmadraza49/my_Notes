@@ -130,7 +130,6 @@ function showApp() {
   screenForgotInline.classList.add("hidden");
   screenApp.classList.remove("hidden");
 
-  // Hide the email text (optional)
   const emailDisplay = document.querySelector("#screen-app .email-display");
   if (emailDisplay) emailDisplay.style.display = "none";
 
@@ -179,16 +178,17 @@ btnSave.addEventListener("click", async () => {
       FULLSCREEN POPUP
 ---------------------------------- */
 function openFullscreen(url) {
-  popupImg.src = url; // set full-size image
+  popupImg.src = url;
   imagePopup.classList.remove("hidden");
 }
 
 imagePopup.addEventListener("click", () => {
   imagePopup.classList.add("hidden");
-  popupImg.src = ""; // free memory
+  popupImg.src = "";
 });
+
 /* ---------------------------------
-      GALLERY
+      GALLERY (FIXED FULL VIEW)
 ---------------------------------- */
 btnUpload.addEventListener("click", async () => {
   const files = imageInput.files;
@@ -198,44 +198,25 @@ btnUpload.addEventListener("click", async () => {
     const name = `${currentUser.id}_${Date.now()}_${file.name}`;
     const path = `Gallery/${name}`;
 
-    // upload file
-    const { error: uploadError } = await sb.storage.from("images").upload(path, file, { cacheControl: "3600", upsert: false });
+    const { error: uploadError } = await sb.storage
+      .from("images")
+      .upload(path, file, { cacheControl: "3600", upsert: false });
+
     if (uploadError) {
       console.error("Upload error:", uploadError);
       continue;
     }
 
-    // get public URL
     const { data: urlData } = sb.storage.from("images").getPublicUrl(path);
     const publicUrl = urlData.publicUrl;
 
-    // insert into database
-    await sb.from("images").insert([{ file_url: publicUrl, user_id: currentUser.id }]);
+    await sb
+      .from("images")
+      .insert([{ file_url: publicUrl, user_id: currentUser.id }]);
   }
 
   loadGallery();
 });
-
-async function loadGallery() {
-  const { data = [], error } = await sb
-    .from("images")
-    .select("*")
-    .eq("user_id", currentUser.id)
-    .order("id");
-
-  if (error) return console.error("Error loading images:", error);
-
-  galleryGrid.innerHTML = "";
-
-  data.forEach((imgObj) => {
-    const img = document.createElement("img");
-    img.src = imgObj.file_url;
-    img.className = "w-full h-44 object-contain rounded-xl shadow cursor-pointer";
-    img.loading = "lazy"; // speeds up initial load
-    img.addEventListener("click", () => openFullscreen(imgObj.file_url));
-    galleryGrid.appendChild(img);
-  });
-} 
 
 async function loadGallery() {
   const { data = [] } = await sb
@@ -248,9 +229,14 @@ async function loadGallery() {
 
   data.forEach((imgObj) => {
     const img = document.createElement("img");
+
     img.src = imgObj.file_url;
-    img.className = "w-full h-44 object-cover rounded-xl shadow cursor-pointer";
+    img.className =
+      "w-full h-auto object-contain rounded-xl shadow cursor-pointer";
+    img.loading = "lazy";
+
     img.addEventListener("click", () => openFullscreen(imgObj.file_url));
+
     galleryGrid.appendChild(img);
   });
 }
@@ -296,4 +282,3 @@ async function loadBooks() {
     booksList.appendChild(li);
   });
 }
-
