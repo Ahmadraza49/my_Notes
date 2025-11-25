@@ -3,7 +3,7 @@
 ---------------------------------- */
 const sb = window.supabase.createClient(
   "https://ytxhlihzxgftffaikumr.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl0eGhsaWh6eGdmdGZmYWlrdW1yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM4ODAxNTgsImV4cCI6MjA3OTQ1NjE1OH0._k5hfgJwVSrbXtlRDt3ZqCYpuU1k-_OqD7M0WML4ehAY"
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl0eGhsaWh6eGdmdGZmYWlrdW1yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM4ODAxNTgsImV4cCI6MjA3OTQ1NjE1OH0._k5hfgJwVSrbXtlRDt3ZqCYpuU1k-_OqD7M0WML4ehA"
 );
 
 let currentUser = null;
@@ -111,7 +111,7 @@ btnSendResetInline.addEventListener("click", async () => {
   if (!email) return alert("Enter your email");
 
   await sb.auth.resetPasswordForEmail(email, {
-    redirectTo: "https://my-notes-jade-five.vercel.app/reset.html"
+    redirectTo: "https://my-notes-jade-five.vercel.app/reset.html",
   });
 
   alert("Reset link sent if email exists.");
@@ -150,7 +150,7 @@ async function loadNotes() {
     .order("id");
 
   notesList.innerHTML = "";
-  data.forEach(n => {
+  data.forEach((n) => {
     const li = document.createElement("li");
     li.className = "p-2 bg-gray-100 rounded";
     li.textContent = n.text;
@@ -168,24 +168,34 @@ btnSave.addEventListener("click", async () => {
 });
 
 /* ---------------------------------
-      FULLSCREEN VIEWER
+      FULLSCREEN VIEWER (Improved)
 ---------------------------------- */
 function openFullscreen(url) {
   const overlay = document.createElement("div");
-  overlay.style = `
-    position:fixed;top:0;left:0;width:100vw;height:100vh;
-    background:rgba(0,0,0,0.9);display:flex;
-    align-items:center;justify-content:center;z-index:9999;
+  overlay.style.cssText = `
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.92);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
   `;
-  
+
   const img = document.createElement("img");
   img.src = url;
-  img.style = "max-width:90%;max-height:90%;border-radius:10px;";
+  img.style.cssText = `
+    max-width: 95%;
+    max-height: 95%;
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(255,255,255,0.4);
+  `;
 
   overlay.appendChild(img);
   overlay.addEventListener("click", () => overlay.remove());
   document.body.appendChild(overlay);
 }
+
 
 /* ---------------------------------
       GALLERY
@@ -202,7 +212,7 @@ btnUpload.addEventListener("click", async () => {
     const { data } = sb.storage.from("images").getPublicUrl(path);
 
     await sb.from("images").insert([
-      { file_url: data.publicUrl, user_id: currentUser.id }
+      { file_url: data.publicUrl, user_id: currentUser.id },
     ]);
   }
 
@@ -218,10 +228,11 @@ async function loadGallery() {
 
   galleryGrid.innerHTML = "";
 
-  data.forEach(imgObj => {
+  data.forEach((imgObj) => {
     const img = document.createElement("img");
     img.src = imgObj.file_url;
-    img.className = "w-full h-40 object-cover rounded-xl shadow cursor-pointer";
+    img.className =
+      "w-full h-40 object-cover rounded-xl shadow cursor-pointer";
     img.onclick = () => openFullscreen(imgObj.file_url);
     galleryGrid.appendChild(img);
   });
@@ -243,7 +254,7 @@ btnUploadBook.addEventListener("click", async () => {
   }
 
   await sb.from("books").insert([
-    { text: bookText.value.trim(), file_url: fileURL, user_id: currentUser.id }
+    { text: bookText.value.trim(), file_url: fileURL, user_id: currentUser.id },
   ]);
 
   loadBooks();
@@ -258,7 +269,7 @@ async function loadBooks() {
 
   booksList.innerHTML = "";
 
-  data.forEach(b => {
+  data.forEach((b) => {
     const li = document.createElement("li");
     li.className = "p-2 bg-gray-100 rounded";
     li.innerHTML = `
@@ -268,4 +279,3 @@ async function loadBooks() {
     booksList.appendChild(li);
   });
 }
-
