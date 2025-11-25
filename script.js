@@ -29,7 +29,6 @@ const btnLogout = document.getElementById("btn-logout");
 /* notes */
 const noteInput = document.getElementById("note-input");
 const btnSave = document.getElementById("btn-save");
-const btnClear = document.getElementById("btn-clear");
 const notesList = document.getElementById("notes-list");
 
 /* gallery */
@@ -48,6 +47,10 @@ const screenForgotInline = document.getElementById("screen-forgot-inline");
 const forgotEmailInline = document.getElementById("forgot-email-inline");
 const btnSendResetInline = document.getElementById("btn-send-reset-inline");
 const btnBackToLogin = document.getElementById("btn-back-to-login");
+
+/* fullscreen popup */
+const imagePopup = document.getElementById("image-popup");
+const popupImg = document.getElementById("popup-img");
 
 /* ---------------------------------
      SCREEN SWITCHING
@@ -127,6 +130,10 @@ function showApp() {
   screenForgotInline.classList.add("hidden");
   screenApp.classList.remove("hidden");
 
+  // Hide the email text (optional)
+  const emailDisplay = document.querySelector("#screen-app .email-display");
+  if (emailDisplay) emailDisplay.style.display = "none";
+
   loadNotes();
   loadGallery();
   loadBooks();
@@ -137,14 +144,7 @@ function showApp() {
 ---------------------------------- */
 btnLogout.addEventListener("click", async () => {
   await sb.auth.signOut();
-
-  currentUser = null;
-  notesList.innerHTML = "";
-  galleryGrid.innerHTML = "";
-  booksList.innerHTML = "";
-
-  screenApp.classList.add("hidden");
-  screenLogin.classList.remove("hidden");
+  location.reload();
 });
 
 /* ---------------------------------
@@ -175,23 +175,16 @@ btnSave.addEventListener("click", async () => {
   loadNotes();
 });
 
-btnClear.addEventListener("click", () => {
-  noteInput.value = "";
-});
-
 /* ---------------------------------
-   FULLSCREEN POPUP
+      FULLSCREEN POPUP
 ---------------------------------- */
 function openFullscreen(url) {
-  const popup = document.getElementById("image-popup");
-  const popupImg = document.getElementById("popup-img");
-
   popupImg.src = url;
-  popup.classList.remove("hidden");
+  imagePopup.classList.remove("hidden");
 }
 
-document.getElementById("image-popup").addEventListener("click", () => {
-  document.getElementById("image-popup").classList.add("hidden");
+imagePopup.addEventListener("click", () => {
+  imagePopup.classList.add("hidden");
 });
 
 /* ---------------------------------
@@ -205,12 +198,11 @@ btnUpload.addEventListener("click", async () => {
     const name = `${currentUser.id}_${Date.now()}_${file.name}`;
     const path = `Gallery/${name}`;
 
-    await sb.storage.from("images").upload(path, file);
+    await sb.storage.from("images").upload(path, file, { cacheControl: "3600", upsert: false });
     const { data } = sb.storage.from("images").getPublicUrl(path);
-    const publicUrl = data.publicUrl;
 
     await sb.from("images").insert([
-      { file_url: publicUrl, user_id: currentUser.id },
+      { file_url: data.publicUrl, user_id: currentUser.id },
     ]);
   }
 
@@ -230,7 +222,6 @@ async function loadGallery() {
     const img = document.createElement("img");
     img.src = imgObj.file_url;
     img.className = "w-full h-44 object-cover rounded-xl shadow cursor-pointer";
-
     img.addEventListener("click", () => openFullscreen(imgObj.file_url));
     galleryGrid.appendChild(img);
   });
@@ -255,8 +246,6 @@ btnUploadBook.addEventListener("click", async () => {
     { text: bookText.value.trim(), file_url: fileURL, user_id: currentUser.id },
   ]);
 
-  bookText.value = "";
-  bookFile.value = "";
   loadBooks();
 });
 
