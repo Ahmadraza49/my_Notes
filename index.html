@@ -20,27 +20,51 @@
       <h1 class="text-2xl font-bold text-center mb-4">🔐 My Notes — Signup / Login</h1>
 
       <!-- SIGNUP -->
-      <div id="screen-signup" class="space-y-3">
-        <h2 class="font-semibold">Create Account</h2>
-        <input id="signup-email" type="email" class="input" placeholder="Email (you@domain.com)">
-        <input id="signup-pass" type="password" class="input" placeholder="Password (min 6 chars)">
-        <div class="flex gap-2">
-          <button id="btn-signup" class="btn bg-blue-600 text-white">Sign Up</button>
-          <button id="goto-login" class="btn border">Already have an account?</button>
-        </div>
-      </div>
+    <!-- SIGNUP -->
+<div id="screen-signup" class="space-y-4">
+  <h2 class="font-semibold text-xl mb-2">Create Account</h2>
 
-      <!-- LOGIN -->
-      <div id="screen-login" class="hidden space-y-3">
-        <h2 class="font-semibold">Login</h2>
-        <input id="login-email" type="email" class="input" placeholder="Email">
-        <input id="login-pass" type="password" class="input" placeholder="Password">
-        <div class="flex gap-2">
-          <button id="btn-login" class="btn bg-green-600 text-white">Login</button>
-          <button id="goto-signup" class="btn border">Create new account</button>
-        </div>
-        <button id="btn-forgot" class="text-blue-700 underline">Forgot password?</button>
-      </div>
+  <div>
+    <label class="block font-medium mb-1">Email</label>
+    <input id="signup-email" type="email" class="input" placeholder="Enter your email">
+  </div>
+
+  <div>
+    <label class="block font-medium mb-1">Password</label>
+    <input id="signup-pass" type="password" class="input" placeholder="Enter password">
+  </div>
+
+  <div class="flex gap-2">
+    <button id="btn-signup" class="btn bg-blue-600 text-white w-full">Sign Up</button>
+  </div>
+
+  <button id="goto-login" class="text-blue-700 underline">Already have an account?</button>
+</div>
+
+
+<!-- LOGIN -->
+<div id="screen-login" class="hidden space-y-4">
+  <h2 class="font-semibold text-xl mb-2">Login</h2>
+
+  <div>
+    <label class="block font-medium mb-1">Email</label>
+    <input id="login-email" type="email" class="input" placeholder="Enter your email">
+  </div>
+
+  <div>
+    <label class="block font-medium mb-1">Password</label>
+    <input id="login-pass" type="password" class="input" placeholder="Enter password">
+  </div>
+
+  <div class="flex gap-2">
+    <button id="btn-login" class="btn bg-green-600 text-white w-full">Login</button>
+  </div>
+
+  <button id="goto-signup" class="text-blue-700 underline">Create new account</button>
+
+  <button id="btn-forgot" class="text-blue-700 underline block mt-2">Forgot password?</button>
+</div>
+>
 
       <!-- FORGOT PASSWORD -->
       <div id="screen-forgot-inline" class="hidden space-y-3">
@@ -103,6 +127,7 @@
 
 </body>
 </html>
+
 
 
 
