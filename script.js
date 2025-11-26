@@ -8,27 +8,33 @@ const sb = window.supabase.createClient(
 
 let currentUser = null;
 
-/* ELEMENTS */
+/* ---------------------------------
+      ELEMENTS
+---------------------------------- */
 const screenSignup = document.getElementById("screen-signup");
 const screenLogin = document.getElementById("screen-login");
 const screenApp = document.getElementById("screen-app");
 
+/* signup */
 const signupEmail = document.getElementById("signup-email");
 const signupPass = document.getElementById("signup-pass");
 const btnSignup = document.getElementById("btn-signup");
 const gotoLogin = document.getElementById("goto-login");
 
+/* login */
 const loginEmail = document.getElementById("login-email");
 const loginPass = document.getElementById("login-pass");
 const btnLogin = document.getElementById("btn-login");
-const btnForgot = document.getElementById("btn-forgot");
 const gotoSignup = document.getElementById("goto-signup");
+const btnForgot = document.getElementById("btn-forgot");
 
+/* logout */
 const btnLogout = document.getElementById("btn-logout");
 
 /* notes */
 const noteInput = document.getElementById("note-input");
 const btnSave = document.getElementById("btn-save");
+const btnClear = document.getElementById("btn-clear");
 const notesList = document.getElementById("notes-list");
 
 /* gallery */
@@ -81,13 +87,17 @@ btnBackToLogin.addEventListener("click", () => {
 btnSignup.addEventListener("click", async () => {
   const email = signupEmail.value.trim();
   const password = signupPass.value.trim();
+
   if (!email || !password) return alert("Enter email & password");
 
   const { error } = await sb.auth.signUp({ email, password });
   if (error) return alert(error.message);
 
   alert("Account created! Login now.");
-  signupEmail.value = signupPass.value = "";
+
+  signupEmail.value = "";
+  signupPass.value = "";
+
   screenSignup.classList.add("hidden");
   screenLogin.classList.remove("hidden");
 });
@@ -100,7 +110,11 @@ btnLogin.addEventListener("click", async () => {
   const password = loginPass.value.trim();
   if (!email || !password) return alert("Enter email & password");
 
-  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  const { data, error } = await sb.auth.signInWithPassword({
+    email,
+    password,
+  });
+
   if (error) return alert(error.message);
 
   currentUser = data.user;
@@ -122,7 +136,7 @@ btnSendResetInline.addEventListener("click", async () => {
 });
 
 /* ---------------------------------
-     SHOW APP
+      SHOW APP
 ---------------------------------- */
 function showApp() {
   screenSignup.classList.add("hidden");
@@ -130,16 +144,13 @@ function showApp() {
   screenForgotInline.classList.add("hidden");
   screenApp.classList.remove("hidden");
 
-  const emailDisplay = document.querySelector("#screen-app .email-display");
-  if (emailDisplay) emailDisplay.style.display = "none";
-
   loadNotes();
   loadGallery();
   loadBooks();
 }
 
 /* ---------------------------------
-     LOGOUT
+      LOGOUT
 ---------------------------------- */
 btnLogout.addEventListener("click", async () => {
   await sb.auth.signOut();
@@ -147,16 +158,17 @@ btnLogout.addEventListener("click", async () => {
 });
 
 /* ---------------------------------
-      NOTES
+      NOTES - LOAD
 ---------------------------------- */
 async function loadNotes() {
   const { data = [] } = await sb
     .from("notes")
     .select("*")
     .eq("user_id", currentUser.id)
-    .order("id");
+    .order("id", { ascending: true });
 
   notesList.innerHTML = "";
+
   data.forEach((n) => {
     const li = document.createElement("li");
     li.className = "p-2 bg-gray-100 rounded";
@@ -165,17 +177,37 @@ async function loadNotes() {
   });
 }
 
+/* ---------------------------------
+      NOTES - SAVE
+---------------------------------- */
 btnSave.addEventListener("click", async () => {
   const text = noteInput.value.trim();
   if (!text) return;
 
-  await sb.from("notes").insert([{ text, user_id: currentUser.id }]);
+  await sb.from("notes").insert([
+    { text, user_id: currentUser.id }
+  ]);
+
   noteInput.value = "";
   loadNotes();
 });
 
 /* ---------------------------------
-      FULLSCREEN POPUP
+      NOTES - CLEAR ALL
+---------------------------------- */
+btnClear.addEventListener("click", async () => {
+  if (!confirm("Clear all notes?")) return;
+
+  await sb
+    .from("notes")
+    .delete()
+    .eq("user_id", currentUser.id);
+
+  loadNotes();
+});
+
+/* ---------------------------------
+      FULLSCREEN IMAGE VIEW
 ---------------------------------- */
 function openFullscreen(url) {
   popupImg.src = url;
@@ -188,7 +220,7 @@ imagePopup.addEventListener("click", () => {
 });
 
 /* ---------------------------------
-      GALLERY (FIXED FULL VIEW)
+      GALLERY - UPLOAD
 ---------------------------------- */
 btnUpload.addEventListener("click", async () => {
   const files = imageInput.files;
@@ -198,26 +230,23 @@ btnUpload.addEventListener("click", async () => {
     const name = `${currentUser.id}_${Date.now()}_${file.name}`;
     const path = `Gallery/${name}`;
 
-    const { error: uploadError } = await sb.storage
-      .from("images")
-      .upload(path, file, { cacheControl: "3600", upsert: false });
+    const { error } = await sb.storage.from("images").upload(path, file);
+    if (error) continue;
 
-    if (uploadError) {
-      console.error("Upload error:", uploadError);
-      continue;
-    }
+    const { data } = sb.storage.from("images").getPublicUrl(path);
+    const publicUrl = data.publicUrl;
 
-    const { data: urlData } = sb.storage.from("images").getPublicUrl(path);
-    const publicUrl = urlData.publicUrl;
-
-    await sb
-      .from("images")
-      .insert([{ file_url: publicUrl, user_id: currentUser.id }]);
+    await sb.from("images").insert([
+      { file_url: publicUrl, user_id: currentUser.id }
+    ]);
   }
 
   loadGallery();
 });
 
+/* ---------------------------------
+      GALLERY - LOAD
+---------------------------------- */
 async function loadGallery() {
   const { data = [] } = await sb
     .from("images")
@@ -229,14 +258,10 @@ async function loadGallery() {
 
   data.forEach((imgObj) => {
     const img = document.createElement("img");
-
     img.src = imgObj.file_url;
     img.className =
-      "w-full h-32 object-contain rounded-m shadow cursor-pointer";
-    img.loading = "lazy";
-
+      "w-full h-32 object-contain rounded shadow cursor-pointer";
     img.addEventListener("click", () => openFullscreen(imgObj.file_url));
-
     galleryGrid.appendChild(img);
   });
 }
@@ -251,6 +276,7 @@ btnUploadBook.addEventListener("click", async () => {
   if (file) {
     const name = `${currentUser.id}_${Date.now()}_${file.name}`;
     const path = `BooksDocs/${name}`;
+
     await sb.storage.from("images").upload(path, file);
     const { data } = sb.storage.from("images").getPublicUrl(path);
     fileURL = data.publicUrl;
@@ -277,10 +303,12 @@ async function loadBooks() {
     li.className = "p-2 bg-gray-100 rounded";
     li.innerHTML = `
       <div>${b.text}</div>
-      ${b.file_url ? `<a href="${b.file_url}" class="text-blue-600 underline" target="_blank">Download</a>` : ""}
+      ${
+        b.file_url
+          ? `<a href="${b.file_url}" class="text-blue-600 underline" target="_blank">Download</a>`
+          : ""
+      }
     `;
     booksList.appendChild(li);
   });
 }
-
-
