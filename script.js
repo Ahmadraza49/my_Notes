@@ -232,7 +232,7 @@ async function loadGallery() {
 
     img.src = imgObj.file_url;
     img.className =
-      "w-full h-auto object-contain rounded-xl shadow cursor-pointer";
+      "w-full h-32 object-contain rounded-xl shadow cursor-pointer";
     img.loading = "lazy";
 
     img.addEventListener("click", () => openFullscreen(imgObj.file_url));
@@ -282,3 +282,4 @@ async function loadBooks() {
     booksList.appendChild(li);
   });
 }
+
